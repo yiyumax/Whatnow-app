@@ -1,0 +1,2 @@
+/* 主畫面上顯示的 App 名稱。Info.plist 裡的名稱必須是英文（SideStore 登記 App ID 用），中文放這裡。 */
+"CFBundleDisplayName" = "現在該做什麼";

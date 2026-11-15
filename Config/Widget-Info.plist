@@ -9,7 +9,8 @@
 		<string>zh-Hant</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>現在該做什麼</string>
+	<!-- 一定要是英文（SideStore 登記 App ID 用）。小工具在選單裡的中文名稱寫在程式裡，不受影響。 -->
+	<string>WhatNow Widget</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

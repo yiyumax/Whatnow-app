@@ -56,6 +56,8 @@ jobs:
           set -euo pipefail
           APP="build/Build/Products/Release-iphoneos/WhatNow.app"
           test -d "$APP/PlugIns/WhatNowWidget.appex"
+          # 中文顯示名稱要有被打包進去。
+          test -f "$APP/zh-Hant.lproj/InfoPlist.strings"
 
           rm -rf Payload WhatNow.ipa
           mkdir Payload

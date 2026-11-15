@@ -46,7 +46,7 @@
 
 ### A4. 看它編譯
 
-1. 用瀏覽器打開 `https://github.com/你的帳號/whatnow`。
+1. 用瀏覽器打開 `https://github.com/yiyumax/Whatnow-app`。
 2. 點上方的 **Actions**。上傳後會自動開始一個叫 **Build IPA** 的工作。
 3. 黃色圓圈是進行中，綠色勾勾是成功（大約 5–10 分鐘）。
 4. 如果是紅色叉叉，點進去看是哪一步失敗：
@@ -58,7 +58,7 @@
 
 ### A5. 在 iPhone 上下載 `.ipa`
 
-1. 在 iPhone 的 Safari 打開 `https://github.com/你的帳號/whatnow/releases/latest`。
+1. 在 iPhone 的 Safari 打開 `https://github.com/yiyumax/Whatnow-app/releases/latest`。
 2. 在 **Assets** 底下點 **WhatNow.ipa**，選「下載」。
 3. 檔案會存到「檔案」App 的「下載項目」。先放著，B 段會用到。
 
@@ -213,7 +213,7 @@ App → **匯入匯出** → **匯出成檔案**，存到「檔案」App。正�
 
 ### D3. 在 iPhone 上更新
 
-1. Safari 打開 `https://github.com/你的帳號/whatnow/releases/latest`，下載新的 **WhatNow.ipa**。
+1. Safari 打開 `https://github.com/yiyumax/Whatnow-app/releases/latest`，下載新的 **WhatNow.ipa**。
 2. 打開 LocalDevVPN，按 Connect。
 3. SideStore → **My Apps** → 左上角 **+** → 選新的 `WhatNow.ipa`。
 4. SideStore 會認出這是同一個 App，直接蓋過去更新。

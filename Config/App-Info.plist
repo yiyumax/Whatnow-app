@@ -9,7 +9,9 @@
 		<string>zh-Hant</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>現在該做什麼</string>
+	<!-- 這裡一定要是英文：SideStore 會拿它去跟 Apple 登記 App ID，Apple 不收中文。
+	     主畫面上顯示的中文名稱放在 App/zh-Hant.lproj/InfoPlist.strings。 -->
+	<string>WhatNow</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
