@@ -1,0 +1,99 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 顯示工具版本
+        run: |
+          xcodebuild -version
+          swift --version
+
+      # 測試沒過就不編譯 App。
+      - name: 跑核心邏輯的單元測試
+        run: swift test --package-path Packages/ScheduleCore
+
+      - name: 安裝 XcodeGen
+        run: brew install xcodegen
+
+      - name: 產生 Xcode 專案
+        run: xcodegen generate
+
+      - name: 編譯（不簽名）
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project WhatNow.xcodeproj \
+            -scheme WhatNow \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+
+      - name: 打包成 .ipa
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/WhatNow.app"
+          test -d "$APP/PlugIns/WhatNowWidget.appex"
+
+          rm -rf Payload WhatNow.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+
+          # 沒有 Apple 憑證的「假簽名」(ad-hoc)，唯一目的是把 entitlements 嵌進執行檔。
+          # SideStore 重簽時會從這裡讀到 App Group，才會幫 App 和小工具登記共用群組。
+          # 要先簽裡面的 extension，再簽外面的 App。
+          codesign --force --sign - --timestamp=none \
+            --entitlements Config/Widget.entitlements \
+            Payload/WhatNow.app/PlugIns/WhatNowWidget.appex
+          codesign --force --sign - --timestamp=none \
+            --entitlements Config/App.entitlements \
+            Payload/WhatNow.app
+
+          echo "--- App entitlements ---"
+          codesign -d --entitlements - Payload/WhatNow.app
+          echo "--- Widget entitlements ---"
+          codesign -d --entitlements - Payload/WhatNow.app/PlugIns/WhatNowWidget.appex
+
+          zip -qry WhatNow.ipa Payload
+          ls -lh WhatNow.ipa
+
+      - name: 上傳 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WhatNow-ipa
+          path: WhatNow.ipa
+          if-no-files-found: error
+
+      # 推到 main 或手動執行時發一個 Release，iPhone 用 Safari 就能直接下載 .ipa。
+      - name: 發佈到 GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" WhatNow.ipa \
+            --title "Build ${{ github.run_number }}" \
+            --notes "自動編譯，commit ${GITHUB_SHA::7}。在 iPhone 上下載 WhatNow.ipa，用 SideStore 安裝。" \
+            --target "$GITHUB_SHA" \
+            --latest

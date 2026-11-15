@@ -1,0 +1,67 @@
+name: WhatNow
+
+options:
+  bundleIdPrefix: com.whatnow
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: zh-Hant
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    GENERATE_INFOPLIST_FILE: NO
+
+packages:
+  ScheduleCore:
+    path: Packages/ScheduleCore
+
+# 免費 Apple ID 的 App ID 額度有限：整個專案只有「主 App + 一個 Widget Extension」。
+# 不要再加其他 extension。
+targets:
+  WhatNow:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Shared
+    dependencies:
+      - package: ScheduleCore
+      - target: WhatNowWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.whatnow.app
+        PRODUCT_NAME: WhatNow
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/App.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  WhatNowWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    dependencies:
+      - package: ScheduleCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.whatnow.app.widget
+        PRODUCT_NAME: WhatNowWidget
+        INFOPLIST_FILE: Config/Widget-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/Widget.entitlements
+        SKIP_INSTALL: YES
+
+schemes:
+  WhatNow:
+    build:
+      targets:
+        WhatNow: all
+        WhatNowWidget: all
+    run:
+      config: Debug
+    archive:
+      config: Release
