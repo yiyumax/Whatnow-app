@@ -29,6 +29,7 @@ struct ImportExportView: View {
     @State private var showResetConfirm = false
     @State private var message: String?
     @State private var showMessage = false
+    @FocusState private var pasteFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -74,12 +75,15 @@ struct ImportExportView: View {
                         .frame(minHeight: 140)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        .focused($pasteFocused)
                     Button {
                         pasted = UIPasteboard.general.string ?? ""
+                        pasteFocused = false
                     } label: {
                         Label("貼上剪貼簿內容", systemImage: "doc.on.clipboard")
                     }
                     Button {
+                        pasteFocused = false
                         importText(pasted)
                     } label: {
                         Label("匯入這段文字", systemImage: "square.and.arrow.down")
@@ -97,6 +101,14 @@ struct ImportExportView: View {
             }
             .navigationTitle("匯入／匯出")
             .navigationBarTitleDisplayMode(.inline)
+            // 多行輸入框沒有「完成」鍵：往下滑清單，或按鍵盤上方的「完成」收起鍵盤。
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完成") { pasteFocused = false }
+                }
+            }
             .fileImporter(isPresented: $showImporter,
                           allowedContentTypes: [.json, .plainText, .text, .data]) { result in
                 switch result {
