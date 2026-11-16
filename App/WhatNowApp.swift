@@ -23,6 +23,8 @@ struct RootView: View {
         TabView {
             HomeView()
                 .tabItem { Label("現在", systemImage: "clock.fill") }
+            MemoView()
+                .tabItem { Label("備忘錄", systemImage: "checklist") }
             EditView()
                 .tabItem { Label("編輯", systemImage: "calendar") }
             ImportExportView()
