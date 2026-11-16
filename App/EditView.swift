@@ -35,10 +35,29 @@ private struct SetBar: View {
         HStack(spacing: 2) {
             ForEach(Array(store.sets.enumerated()), id: \.offset) { index, set in
                 let selected = index == store.activeIndex
-                Button {
-                    guard !selected else { return }
-                    onWillSwitch()
-                    store.selectSet(index)
+                // 用 Menu 而不是 contextMenu：contextMenu 放在 List 的同一列裡，
+                // 長按任何一格都會跳出第一格的選單。Menu 是每一格各自獨立的。
+                Menu {
+                    Button {
+                        onRename(index)
+                    } label: {
+                        Label("重新命名組合 \(index + 1)", systemImage: "pencil")
+                    }
+                    if store.canAddSet {
+                        Button {
+                            onWillSwitch()
+                            store.duplicateSet(index)
+                        } label: {
+                            Label("把組合 \(index + 1) 複製成新組合", systemImage: "plus.square.on.square")
+                        }
+                    }
+                    if store.sets.count > 1 {
+                        Button(role: .destructive) {
+                            onDelete(index)
+                        } label: {
+                            Label("刪除組合 \(index + 1)", systemImage: "trash")
+                        }
+                    }
                 } label: {
                     Text("\(index + 1)")
                         .font(.footnote.weight(selected ? .semibold : .regular))
@@ -49,32 +68,16 @@ private struct SetBar: View {
                                 .fill(selected ? Color(.systemGray2) : Color.clear)
                         )
                         .contentShape(Rectangle())
+                } primaryAction: {
+                    // 點一下 = 切換；長按 = 上面的選單。
+                    guard !selected else { return }
+                    onWillSwitch()
+                    store.selectSet(index)
                 }
+                .menuStyle(.button)
                 .buttonStyle(.plain)
                 .accessibilityLabel(set.name.isEmpty ? "組合 \(index + 1)" : "組合 \(index + 1)，\(set.name)")
                 .accessibilityAddTraits(selected ? .isSelected : [])
-                .contextMenu {
-                    Button {
-                        onRename(index)
-                    } label: {
-                        Label("重新命名", systemImage: "pencil")
-                    }
-                    if store.canAddSet {
-                        Button {
-                            onWillSwitch()
-                            store.duplicateSet(index)
-                        } label: {
-                            Label("複製成新組合", systemImage: "plus.square.on.square")
-                        }
-                    }
-                    if store.sets.count > 1 {
-                        Button(role: .destructive) {
-                            onDelete(index)
-                        } label: {
-                            Label("刪除", systemImage: "trash")
-                        }
-                    }
-                }
             }
 
             if store.canAddSet {
