@@ -55,7 +55,7 @@ struct ImportExportView: View {
                 } header: {
                     Text("匯出")
                 } footer: {
-                    Text("格式和 Scriptable 版本相同。更新 App 之前先匯出一份當備份。")
+                    Text("匯出和匯入都只針對目前使用中的組合 \(store.activeIndex + 1)。格式和 Scriptable 版本相同。更新 App 之前先匯出一份當備份。")
                 }
 
                 Section {
@@ -114,7 +114,7 @@ struct ImportExportView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: { schedule in
-                Text("匯入的內容有 \(schedule.totalSlotCount) 個時段，目前的時間表會被整份換掉。")
+                Text("匯入的內容有 \(schedule.totalSlotCount) 個時段，組合 \(store.activeIndex + 1) 的時間表會被整份換掉，其他組合不受影響。")
             }
             .alert("要還原成預設時間表嗎？", isPresented: $showResetConfirm) {
                 Button("還原", role: .destructive) {
@@ -122,7 +122,7 @@ struct ImportExportView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("目前的時間表會被整份換掉。")
+                Text("組合 \(store.activeIndex + 1) 的時間表會被整份換掉，其他組合不受影響。")
             }
             .alert(message ?? "", isPresented: $showMessage) {
                 Button("好", role: .cancel) {}

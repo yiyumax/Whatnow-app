@@ -23,6 +23,80 @@ struct EditTarget: Identifiable {
     let slot: Slot
 }
 
+/// 組合切換列：外觀比照下面的星期切換列。數字 = 已有的組合，「+」= 新增（最多 5 組）。
+private struct SetBar: View {
+    @EnvironmentObject private var store: ScheduleStore
+    /// 切換或新增之前呼叫，讓編輯頁先把還沒存的文字存進目前的組合。
+    let onWillSwitch: () -> Void
+    let onRename: (Int) -> Void
+    let onDelete: (Int) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(store.sets.enumerated()), id: \.offset) { index, set in
+                let selected = index == store.activeIndex
+                Button {
+                    guard !selected else { return }
+                    onWillSwitch()
+                    store.selectSet(index)
+                } label: {
+                    Text("\(index + 1)")
+                        .font(.footnote.weight(selected ? .semibold : .regular))
+                        .foregroundStyle(Color.primary)
+                        .frame(maxWidth: .infinity, minHeight: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(selected ? Color(.systemGray2) : Color.clear)
+                        )
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(set.name.isEmpty ? "組合 \(index + 1)" : "組合 \(index + 1)，\(set.name)")
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .contextMenu {
+                    Button {
+                        onRename(index)
+                    } label: {
+                        Label("重新命名", systemImage: "pencil")
+                    }
+                    if store.canAddSet {
+                        Button {
+                            onWillSwitch()
+                            store.duplicateSet(index)
+                        } label: {
+                            Label("複製成新組合", systemImage: "plus.square.on.square")
+                        }
+                    }
+                    if store.sets.count > 1 {
+                        Button(role: .destructive) {
+                            onDelete(index)
+                        } label: {
+                            Label("刪除", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+
+            if store.canAddSet {
+                Button {
+                    onWillSwitch()
+                    store.addSet()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, minHeight: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("新增組合")
+            }
+        }
+        .padding(2)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+}
+
 struct EditView: View {
     @EnvironmentObject private var store: ScheduleStore
     @State private var weekday = Calendar.current.component(.weekday, from: Date()) - 1
@@ -30,12 +104,39 @@ struct EditView: View {
     @State private var showCopy = false
     @State private var gapText = ""
     @FocusState private var gapFocused: Bool
+    @State private var showRename = false
+    @State private var renameIndex = 0
+    @State private var renameText = ""
+    @State private var showDelete = false
+    @State private var deleteIndex = 0
 
     private var slots: [Slot] { store.schedule.days[weekday] }
+
+    private var setLabel: String {
+        let name = store.sets[store.activeIndex].name
+        return name.isEmpty ? "組合 \(store.activeIndex + 1)" : "組合 \(store.activeIndex + 1)「\(name)」"
+    }
 
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    SetBar(onWillSwitch: { commitGap(for: weekday) },
+                           onRename: { index in
+                               renameText = store.sets[index].name
+                               renameIndex = index
+                               showRename = true
+                           },
+                           onDelete: { index in
+                               deleteIndex = index
+                               showDelete = true
+                           })
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+                } footer: {
+                    Text("切到哪個組合，「現在」頁和小工具就用哪一組。長按數字可以命名、複製或刪除。")
+                }
+
                 Section {
                     Picker("星期", selection: $weekday) {
                         ForEach(0..<7, id: \.self) { w in
@@ -75,7 +176,7 @@ struct EditView: View {
                         Label("新增時段", systemImage: "plus.circle.fill")
                     }
                 } header: {
-                    Text("\(Labels.weekdayName(weekday))的時段")
+                    Text("\(setLabel) · \(Labels.weekdayName(weekday))的時段")
                 } footer: {
                     Text("點一下修改，往左滑刪除。")
                 }
@@ -109,7 +210,28 @@ struct EditView: View {
             .sheet(isPresented: $showCopy) {
                 CopyDayView(source: weekday)
             }
+            .alert("組合名稱", isPresented: $showRename) {
+                TextField("例如：上課週、寒假", text: $renameText)
+                Button("儲存") { store.renameSet(renameIndex, to: renameText) }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("選填。留白就只顯示編號。")
+            }
+            .alert("要刪除組合 \(deleteIndex + 1) 嗎？", isPresented: $showDelete) {
+                Button("刪除", role: .destructive) {
+                    gapFocused = false
+                    store.deleteSet(deleteIndex)
+                    gapText = store.schedule.gap[weekday]
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("這個組合的整份時間表會被刪掉，無法復原。後面的組合編號會往前遞補。")
+            }
             .onAppear { gapText = store.schedule.gap[weekday] }
+            .onChange(of: store.activeIndex) { _, _ in
+                gapFocused = false
+                gapText = store.schedule.gap[weekday]
+            }
             .onChange(of: weekday) { old, new in
                 commitGap(for: old)
                 gapText = store.schedule.gap[new]
